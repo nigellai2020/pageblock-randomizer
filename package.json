@@ -1,0 +1,24 @@
+{
+  "name": "@pageblock/pageblock-randomizer",
+  "author": "IJS Technologies",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "rm -rf dist && npx @ijstech/compiler",
+    "serve": "npx @ijstech/cli serve 8080",
+    "test": "ts-node test/test.ts"
+  },
+  "keywords": [],
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "@ijstech/eth-wallet": "^0.1.35",
+    "@ijstech/eth-contract": "^0.1.10"
+  },
+  "devDependencies": {
+    "@ijstech/cli": "^0.1.26",
+    "@ijstech/compiler": "^0.1.18",
+    "@ijstech/components": "^0.1.34",
+    "typescript": "4.8.4",
+    "ts-node": "10.9.1",
+    "@types/node": "18.8.4"
+  }
+}
