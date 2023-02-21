@@ -10,7 +10,8 @@ export interface PageBlock {
 }
 
 export interface IConfig {
-  round?: string;
+  round?: number;
+  releaseTime?: number;
   numberOfValues?: number;
   from?: number;
   to?: number;

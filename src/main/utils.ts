@@ -1,5 +1,10 @@
 import { BigNumber } from "@ijstech/eth-wallet";
 
+interface IDRandResult {
+  round: number;
+  randomness: string;
+}
+
 const DRandAPI = 'https://drand.cloudflare.com/public/'
 async function hash(value: string) {
   const encoder = new TextEncoder();
@@ -18,10 +23,9 @@ async function mapRandomNumberToNumbers(hexString: string, numberOfValues: numbe
   const rejectionThreshold = maxRandomValue.idiv(range).times(range);
   let count = 0;
   while (parts.length < numberOfValues) {
-    let randNum = new BigNumber(0);
     const seed = `${count},${hexString}`;
     const hashedValue = await hash(seed);
-    randNum = new BigNumber('0x' + [...new Uint8Array(hashedValue)].map(x => x.toString(16).padStart(2, '0')).join(''));
+    let randNum = new BigNumber('0x' + [...new Uint8Array(hashedValue)].map(x => x.toString(16).padStart(2, '0')).join(''));
     if (randNum.lt(rejectionThreshold)) {
       randNum = randNum.mod(range);
       const value = new BigNumber(from).plus(randNum).toFixed();
@@ -35,15 +39,30 @@ async function mapRandomNumberToNumbers(hexString: string, numberOfValues: numbe
   return parts.sort((a, b) => new BigNumber(a).minus(b).toNumber());
 }
 
-async function getResult(round: string, numberOfValues: number, from: number, to: number) {
+async function getLatestRound() {
+  const drandResponse = await fetch(`${DRandAPI}latest`);
+  const drandResult: IDRandResult = await drandResponse.json();
+  return drandResult.round;
+}
+
+async function getRandomizerResult(round: number, numberOfValues: number, from: number, to: number) {
   const drandResponse = await fetch(`${DRandAPI}${round}`);
-  const drandResult = await drandResponse.json();
+  const drandResult: IDRandResult = await drandResponse.json();
   const hexString = drandResult.randomness;
-  const finalResult = await mapRandomNumberToNumbers(hexString, numberOfValues, from, to);
-  console.log('finalResult', finalResult);
-  return finalResult;
+  const randomNumbers = await mapRandomNumberToNumbers(hexString, numberOfValues, from, to);
+  console.log('randomNumbers', randomNumbers);
+
+  return randomNumbers;
+}
+
+async function getRoundByReleaseTime(releaseTime: number) {
+  const latestRound = await getLatestRound();
+  const secondsFromNow = (releaseTime - new Date().getTime()) / 1000;
+  const roundsFromNow = Math.ceil(secondsFromNow / 30);
+  return latestRound + roundsFromNow;
 }
 
 export {
-  getResult
+  getRandomizerResult,
+  getRoundByReleaseTime
 }
