@@ -1,11 +1,11 @@
 import {
   Module,
   customModule,
-  VStack,
   Label,
   HStack,
   GridLayout,
-  moment
+  moment,
+  Styles
 } from "@ijstech/components";
 import { IConfig, PageBlock } from "@pageblock-randomizer/global";
 import './index.css';
@@ -18,13 +18,14 @@ declare global {
     }
   }
 }
-
+const Theme = Styles.Theme.ThemeVars;
 
 @customModule
 export class RandomizerBlock extends Module implements PageBlock {
   private _oldData: IConfig = {};
   private _data: IConfig = {};
   private lbRound: Label;
+  private lbDrawTime: Label;
   private gridResults: GridLayout;
   private hstackReleaseTime: HStack;
   private hstackCountdown: HStack;
@@ -34,6 +35,7 @@ export class RandomizerBlock extends Module implements PageBlock {
   private lbReleasedHours: Label;
   private lbReleasedMins: Label;
   private timer: any;
+  private oldTag: any;
 
   async init() {
     super.init();
@@ -57,11 +59,15 @@ export class RandomizerBlock extends Module implements PageBlock {
 
   async refreshApp() {
     this.lbRound.caption = this._data.round.toString();
-    
+    this.lbDrawTime.caption = moment(Number(this._data.releaseTime)).format('MMM DD, YYYY, h:mm A')
     this.gridResults.clearInnerHTML();
     if (Number(this._data.releaseTime) > new Date().getTime()) {
       this.hstackResult.visible = false;
-      this.hstackReleaseTime.visible = true;
+      this.lbRound.font={size: '2rem', weight: 500, color: Theme.colors.primary.main};
+      this.lbRound.lineHeight = '2.637rem';
+      this.lbDrawTime.font={size: '1.75rem', weight: 500, color: Theme.text.secondary};
+      this.lbDrawTime.lineHeight = '2.637rem';
+      // this.hstackReleaseTime.visible = true;
       this.hstackCountdown.visible = true;
       this.lbReleaseTime.caption = moment(Number(this._data.releaseTime)).format('YYYY-MM-DD HH:mm');
       if (this.timer) {
@@ -82,15 +88,21 @@ export class RandomizerBlock extends Module implements PageBlock {
       this.hstackResult.visible = true;
       this.hstackReleaseTime.visible = false;
       this.hstackCountdown.visible = false;
+      this.lbRound.font={size: '1.5rem', weight: 500, color: Theme.colors.primary.main};
+      this.lbRound.lineHeight = '1.758rem';
+      this.lbDrawTime.font={size: '1.5rem', weight: 500, color: Theme.colors.primary.main};
+      this.lbDrawTime.lineHeight = '1.758rem';
       const result = await getRandomizerResult(this._data.round, this._data.numberOfValues, this._data.from, this._data.to);
+      this.gridResults.clearInnerHTML();
       for (let value of result) {
         let label = await Label.create({
           class: 'random-number',
-          display: 'inline-block',
-          font: { size: '1.2rem' },
-          border: {radius: '0.5rem'}, 
-          background: {color: '#E75B66'},
-          padding: { top: '0.5rem', bottom: '0.5rem', left: '0.5rem', right: '0.5rem'},
+          display: 'inline-flex',
+          font: { size: '2rem', bold: true, color: Theme.colors.warning.contrastText },
+          border: {radius: '5px'},
+          background: {color: Theme.colors.warning.main},
+          width: 54.8,
+          height: 54.8,
           caption: value
         })
         this.gridResults.append(label)
@@ -104,6 +116,22 @@ export class RandomizerBlock extends Module implements PageBlock {
 
   async setTag(value: any) {
     this.tag = value;
+    this.updateTheme();
+  }
+
+  private updateTheme() {
+    if (this.tag?.fontColor)
+      this.style.setProperty('--text-primary', this.tag.fontColor);
+    if (this.tag?.backgroundColor)
+      this.style.setProperty('--background-main', this.tag.backgroundColor);
+    if (this.tag?.roundNumberFontColor)
+      this.style.setProperty('--colors-primary-main', this.tag.roundNumberFontColor);
+    if (this.tag?.winningNumberFontColor)
+      this.style.setProperty('--colors-warning-contrast_text', this.tag.roundNumberFontColor);
+    if (this.tag?.winningNumberBackgroundColor)
+      this.style.setProperty('--colors-warning-main', this.tag.roundNumberFontColor);
+    if (this.tag?.nextDrawFontColor)
+      this.style.setProperty('--text-secondary', this.tag.nextDrawFontColor);
   }
 
   getActions() {
@@ -158,6 +186,57 @@ export class RandomizerBlock extends Module implements PageBlock {
           }
         }
       },
+      {
+        name: 'Theme Settings',
+        icon: 'palette',
+        command: (builder: any, userInputData: any) => {
+          return {
+            execute: async () => {
+              if (userInputData) {
+                this.oldTag = this.tag;
+                this.setTag(userInputData);
+                if (builder) builder.setTag(userInputData);
+              }
+            },
+            undo: () => {
+              if (userInputData) {
+                this.setTag(this.oldTag);
+                if (builder) builder.setTag(this.oldTag);
+              }
+            },
+            redo: () => {}
+          }
+        },
+        userInputDataSchema: {
+          type: 'object',
+          properties: {
+            backgroundColor: {
+              type: 'string',
+              format: 'color'
+            },
+            fontColor: {
+              type: 'string',
+              format: 'color'
+            },
+            winningNumberBackgroundColor: {
+              type: 'string',
+              format: 'color'
+            },
+            winningNumberFontColor: {
+              type: 'string',
+              format: 'color'
+            },
+            roundNumberFontColor: {
+              type: 'string',
+              format: 'color'
+            },
+            nextDrawFontColor: {
+              type: 'string',
+              format: 'color'
+            }
+          }
+        }
+      }
     ]
     return actions
   }
@@ -166,32 +245,84 @@ export class RandomizerBlock extends Module implements PageBlock {
     const paddingTimeUnit = { top: '0.5rem', bottom: '0.5rem', left: '0.5rem', right: '0.5rem'};
     return (
       <i-panel>
-        <i-vstack id="pnlRandomizerMain" background={{color: '#DBDBDB'}} padding={{ top: '1rem', bottom: '1rem', left: '1rem', right: '1rem'}}>
+        <i-vstack
+          id="pnlRandomizerMain"
+          background={{color: Theme.background.main}}
+          padding={{ top: '1.5rem', bottom: '4.75rem', left: '1rem', right: '1rem'}}
+        >
           <i-hstack gap='0.25rem' visible={false} id="hstackReleaseTime">
             <i-label caption="Result will be released on " font={{ size: '1.2rem'}}></i-label>
             <i-label id="lbReleaseTime" font={{ size: '1.2rem', weight: 'bold'}}></i-label>
-          </i-hstack>          
-          <i-hstack gap='0.25rem'>
-            <i-label caption="Reference Round Number:" font={{ size: '1.2rem'}}></i-label>
-            <i-label id="lbRound" font={{ size: '1.2rem', weight: 'bold'}}></i-label>
           </i-hstack>
-          <i-hstack gap='0.25rem' visible={false} id="hstackCountdown">
-            <i-vstack>
-              <i-label caption="Time until the result is released:" font={{ size: '1.2rem'}}/>
-              <i-hstack margin={{ top: 4 }} gap='0.5rem' verticalAlignment="center">
-                <i-label id="lbReleasedDays" border={{radius: '0.5rem'}} padding={paddingTimeUnit} background={{color: '#E75B66'}} font={{ size: '1.2rem', weight: 'bold'}}></i-label>
-                <i-label caption="D" font={{ size: '1.2rem', weight: 'bold'}}/>
-                <i-label id="lbReleasedHours" border={{radius: '0.5rem'}} padding={paddingTimeUnit} background={{color: '#E75B66'}} font={{ size: '1.2rem', weight: 'bold'}}></i-label>
-                <i-label caption="H" font={{ size: '1.2rem', weight: 'bold'}}/>
-                <i-label id="lbReleasedMins" border={{radius: '0.5rem'}} padding={paddingTimeUnit} background={{color: '#E75B66'}} font={{ size: '1.2rem', weight: 'bold'}}></i-label>
-                <i-label caption="M" font={{ size: '1.2rem', weight: 'bold'}}/>
-              </i-hstack>
+          <i-stack
+            direction="horizontal"
+            gap="4.938rem"
+          >
+            <i-hstack gap='0.25rem' visible={false} id="hstackCountdown">
+              <i-vstack>
+                <i-label caption="Time until result:" font={{size: '1rem', weight: 500}} opacity={0.5} class="no-wrap"/>
+                <i-hstack margin={{ top: 4 }} gap='0.5rem' verticalAlignment="center">
+                  <i-label
+                    id="lbReleasedDays"
+                    border={{radius: '5px'}}
+                    padding={paddingTimeUnit}
+                    background={{color: Theme.colors.warning.main}}
+                    font={{ size: '1.5rem', bold: true, color: Theme.colors.warning.contrastText }}
+                    width={38}
+                    height={38}
+                    class='random-number'
+                    display='inline-flex'
+                  ></i-label>
+                  <i-label caption="D" font={{ size: '1.2rem', weight: 'bold'}}/>
+                  <i-label
+                    id="lbReleasedHours"
+                    border={{radius: '5px'}}
+                    padding={paddingTimeUnit}
+                    background={{color: Theme.colors.warning.main}}
+                    font={{ size: '1.5rem', bold: true, color: Theme.colors.warning.contrastText }}
+                    width={38}
+                    height={38}
+                    class='random-number'
+                    display='inline-flex'
+                  ></i-label>
+                  <i-label caption="H" font={{ size: '1.2rem', weight: 'bold'}}/>
+                  <i-label
+                    id="lbReleasedMins"
+                    border={{radius: '5px'}}
+                    padding={paddingTimeUnit}
+                    background={{color: Theme.colors.warning.main}}
+                    font={{ size: '1.5rem', bold: true, color: Theme.colors.warning.contrastText }}
+                    width={38}
+                    height={38}
+                    class='random-number'
+                    display='inline-flex'
+                  ></i-label>
+                  <i-label caption="M" font={{ size: '1.2rem', weight: 'bold'}}/>
+                </i-hstack>
+              </i-vstack>
+            </i-hstack>
+            <i-vstack gap='0.25rem'>
+              <i-label caption="Reference Round Number:" font={{size: '1rem', weight: 500}} opacity={0.5} class="no-wrap"></i-label>
+              <i-label id="lbRound" font={{size: '1.5rem', weight: 500, color: Theme.colors.primary.main}}></i-label>
             </i-vstack>
-          </i-hstack>
-          <i-hstack gap='0.25rem' visible={false} id="hstackResult">
-            <i-label caption="Result:" font={{ size: '1.2rem'}}></i-label>
-            <i-grid-layout id={"gridResults"} columnsPerRow={15} gap={{ row: '1rem', column: '1rem' }}>
-            </i-grid-layout>
+            <i-vstack gap='0.25rem'>
+              <i-label caption="Draw Time:" font={{size: '1rem', weight: 500}} opacity={0.5} class="no-wrap"></i-label>
+              <i-label id="lbDrawTime" font={{size: '1.5rem', weight: 500, color: Theme.text.secondary}}></i-label>
+            </i-vstack>
+          </i-stack>
+          <i-hstack
+            gap='0.75rem'
+            visible={false}
+            id="hstackResult"
+            margin={{top: '2.5rem'}}
+            verticalAlignment="center"
+          >
+            <i-label caption="Winning Number:" font={{size: '1rem', weight: 500}} opacity={0.5} class="no-wrap"></i-label>
+            <i-grid-layout id={"gridResults"}
+              gap={{ row: '0.688rem', column: '0.688rem' }}
+              templateColumns={['repeat(auto-fill, 54.8px)']}
+              width="100%"
+            ></i-grid-layout>
           </i-hstack>
         </i-vstack>
       </i-panel>
