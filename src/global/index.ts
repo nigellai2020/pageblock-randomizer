@@ -11,7 +11,8 @@ export interface PageBlock {
 
 export interface IConfig {
   round?: number;
-  releaseTime?: number;
+  releaseTime?: string;
+  releaseUTCTime?: string; //to be removed
   numberOfValues?: number;
   from?: number;
   to?: number;

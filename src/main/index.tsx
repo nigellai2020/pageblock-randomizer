@@ -45,8 +45,11 @@ export class RandomizerBlock extends Module implements PageBlock {
   async setData(value: IConfig) {
     console.log("set data");
     this._data = value;
+    if (this._data.releaseTime) {
+      this._data.releaseUTCTime = moment(Number(this._data.releaseTime)).utc().format('YYYY-MM-DDTHH:mm:ss[Z]');
+    }
     if (!this._data.round) {
-      this._data.round = await getRoundByReleaseTime(this._data.releaseTime);
+      this._data.round = await getRoundByReleaseTime(Number(this._data.releaseTime));
     }
     await this.refreshApp();
   }
@@ -55,14 +58,14 @@ export class RandomizerBlock extends Module implements PageBlock {
     this.lbRound.caption = this._data.round.toString();
     
     this.gridResults.clearInnerHTML();
-    if (this._data.releaseTime > new Date().getTime()) {
+    if (Number(this._data.releaseTime) > new Date().getTime()) {
       this.hstackResult.visible = false;
       this.hstackReleaseTime.visible = true;
       this.hstackCountdown.visible = true;
-      this.lbReleaseTime.caption = moment(this._data.releaseTime).format('YYYY-MM-DD HH:mm');
-      const days = moment(this._data.releaseTime).diff(moment(), 'days');
-      const hours = moment(this._data.releaseTime).diff(moment(), 'hours') - days * 24;
-      const mins = moment(this._data.releaseTime).diff(moment(), 'minutes') - days * 24 * 60 - hours * 60;
+      this.lbReleaseTime.caption = moment(Number(this._data.releaseTime)).format('YYYY-MM-DD HH:mm');
+      const days = moment(Number(this._data.releaseTime)).diff(moment(), 'days');
+      const hours = moment(Number(this._data.releaseTime)).diff(moment(), 'hours') - days * 24;
+      const mins = moment(Number(this._data.releaseTime)).diff(moment(), 'minutes') - days * 24 * 60 - hours * 60;
       this.lbReleasedDays.caption = days.toString();
       this.lbReleasedHours.caption = hours.toString();
       this.lbReleasedMins.caption = mins.toString();
@@ -104,11 +107,18 @@ export class RandomizerBlock extends Module implements PageBlock {
           return {
             execute: async () => {
               this._oldData = this._data;
-              if (userInputData.releaseTime != undefined) this._data.releaseTime = userInputData.releaseTime;
+              if (userInputData.releaseUTCTime != undefined) {
+                this._data.releaseUTCTime = userInputData.releaseUTCTime;
+                this._data.releaseTime = moment.utc(this._data.releaseUTCTime).valueOf().toString();
+              }
+              if (userInputData.releaseTime != undefined) {
+                this._data.releaseTime = userInputData.releaseTime;
+                this._data.releaseUTCTime = moment(Number(this._data.releaseTime)).utc().format('YYYY-MM-DDTHH:mm:ss[Z]');
+              }
               if (userInputData.numberOfValues != undefined) this._data.numberOfValues = userInputData.numberOfValues;
               if (userInputData.from != undefined) this._data.from = userInputData.from;
               if (userInputData.to != undefined) this._data.to = userInputData.to;
-              this._data.round = await getRoundByReleaseTime(this._data.releaseTime);
+              this._data.round = await getRoundByReleaseTime(Number(this._data.releaseTime));
               await this.refreshApp();
             },
             undo: () => {
@@ -119,11 +129,15 @@ export class RandomizerBlock extends Module implements PageBlock {
         },
         userInputDataSchema: {
           type: 'object',
-          properties: {        
-            "releaseTime": {
+          properties: {     
+            "releaseUTCTime": {
               type: "string",
               format: "date-time"
-            },
+            },               
+            // "releaseTime": {
+            //   type: "string",
+            //   format: "date-time"
+            // },
             "numberOfValues": {
               type: 'number'
             },
