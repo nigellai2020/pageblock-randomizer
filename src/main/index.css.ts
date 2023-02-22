@@ -1,6 +1,6 @@
 import { Styles } from '@ijstech/components';
 
-Styles.cssRule('#pnlMain', {
+Styles.cssRule('#pnlRandomizerMain', {
   margin: '0 auto',
   maxWidth: '1400px',
   $nest: {

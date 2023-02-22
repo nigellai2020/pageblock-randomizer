@@ -144,7 +144,7 @@ export class RandomizerBlock extends Module implements PageBlock {
     const paddingTimeUnit = { top: '0.5rem', bottom: '0.5rem', left: '0.5rem', right: '0.5rem'};
     return (
       <i-panel>
-        <i-vstack id="pnlMain" background={{color: '#DBDBDB'}} padding={{ top: '1rem', bottom: '1rem', left: '1rem', right: '1rem'}}>
+        <i-vstack id="pnlRandomizerMain" background={{color: '#DBDBDB'}} padding={{ top: '1rem', bottom: '1rem', left: '1rem', right: '1rem'}}>
           <i-hstack gap='0.25rem' visible={false} id="hstackReleaseTime">
             <i-label caption="Result will be released on " font={{ size: '1.2rem'}}></i-label>
             <i-label id="lbReleaseTime" font={{ size: '1.2rem', weight: 'bold'}}></i-label>
