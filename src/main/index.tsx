@@ -33,6 +33,7 @@ export class RandomizerBlock extends Module implements PageBlock {
   private lbReleasedDays: Label;
   private lbReleasedHours: Label;
   private lbReleasedMins: Label;
+  private timer: any;
 
   async init() {
     super.init();
@@ -63,12 +64,19 @@ export class RandomizerBlock extends Module implements PageBlock {
       this.hstackReleaseTime.visible = true;
       this.hstackCountdown.visible = true;
       this.lbReleaseTime.caption = moment(Number(this._data.releaseTime)).format('YYYY-MM-DD HH:mm');
-      const days = moment(Number(this._data.releaseTime)).diff(moment(), 'days');
-      const hours = moment(Number(this._data.releaseTime)).diff(moment(), 'hours') - days * 24;
-      const mins = moment(Number(this._data.releaseTime)).diff(moment(), 'minutes') - days * 24 * 60 - hours * 60;
-      this.lbReleasedDays.caption = days.toString();
-      this.lbReleasedHours.caption = hours.toString();
-      this.lbReleasedMins.caption = mins.toString();
+      if (this.timer) {
+        clearInterval(this.timer);
+      }
+      const refreshCountdown = () => {
+        const days = moment(Number(this._data.releaseTime)).diff(moment(), 'days');
+        const hours = moment(Number(this._data.releaseTime)).diff(moment(), 'hours') - days * 24;
+        const mins = moment(Number(this._data.releaseTime)).diff(moment(), 'minutes') - days * 24 * 60 - hours * 60;
+        this.lbReleasedDays.caption = days.toString();
+        this.lbReleasedHours.caption = hours.toString();
+        this.lbReleasedMins.caption = mins.toString();
+      }
+      refreshCountdown();
+      this.timer = setInterval(refreshCountdown, 60000);
     }
     else {
       this.hstackResult.visible = true;
